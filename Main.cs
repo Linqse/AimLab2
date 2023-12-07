@@ -39,19 +39,44 @@ public partial class Main : WebUIComponent {
             window = ML.ActiveWindow.DwmWindowBounds;
         }
         
+        
+        
     }
-
+    private bool isGGRunning = false;
     private async Task Go(ImmutableArray<YoloPrediction> predictions)
     {
-        
-        if (Hotkey.IsActive == true)
+        if (isGGRunning || ML.IsActive == false)
+            return;
+
+        isGGRunning = true;
+        try
         {
+            if (Hotkey.IsActive == true)
+            {
+                var sw = new Stopwatch();
+                sw.Start();
+                var result = FindClosestPrediction(predictions);
+                Log.Info($"Find closet {sw.ElapsedMilliseconds}");
+                var predict = CordsForMouseMove(result.X, result.Y, window.Width, window.Height);
+                Log.Info($"CordsForMouseMove {sw.ElapsedMilliseconds}");
+                if (predictions != null && predictions != default)
+                {
+                    Press(predict);
+                    await Task.Delay(80);
+                }
 
-            var result = FindClosestPrediction(predictions);
-            var predict = CordsForMouseMove(result.X, result.Y, window.Width, window.Height);
-            Log.Info($"{predict}");
-            Press(predict);
+                Log.Info($"Finish {sw.ElapsedMilliseconds}");
+                sw.Stop();
 
+            }
+        }
+        catch
+        {
+            Log.Info("Sorry i have a BIG PROBLEM");
+        }
+        finally 
+        {
+            isGGRunning = false;
         }
     }
     private Point FindClosestPrediction(ImmutableArray<YoloPrediction> predictions)
@@ -91,7 +116,7 @@ public partial class Main : WebUIComponent {
         controller.MoveMouseBy(ML.ActiveWindow, closestPredictionCenter.X, closestPredictionCenter.Y);
         controller.LeftButtonDown(ML.ActiveWindow, new Point(0,0));
         controller.LeftButtonUp(ML.ActiveWindow, new Point(0,0));
-        Thread.Sleep(80);
+        //Thread.Sleep(80);
     }
     private static double DistanceSquared(Point p1, Point p2)
     {
